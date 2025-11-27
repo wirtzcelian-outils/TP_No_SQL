@@ -1,0 +1,64 @@
+installation ---> git --> télécharger --> installer --> aller dans programme (où il y a redis), exécuter redis-server.exe puis celui du client.
+On travaillera uniquement sur la session client.
+
+On commence par définir une clé : SET demo "Bonjour"
+
+on peut utiliser create, read, update, delete
+
+on peut faire un utilisateur : set user:moi "MOI"
+on le retrouve avec : get user:moi : "MOI"
+(on peut supprimer avec : del user:moi)
+
+attention la base de donnée n'est pas persistente, elle est sur la RAM, si on veut de la persistence il faut la coupler à une autre.
+
+par défaut la durée de vie de la clé est indéfinie : ttl macle renvoie -1, (on remplace macle par notre cle et -1 veut dire indéfini)
+
+On peut aussi définir un temps avant l'expiration de la clé avec : expire macle X où X est le nombre de seconde
+
+On peut faire des listes en utilisant RPUSH, exemple : RPUSE mesCours "BDA"
+
+pour afficher le contenu on utiliser : LRANGE mesCours 0 -1, le -1 signifiant d'afficher jusqu'à la fin.
+
+LPOP mesCours supprime l'élément le plus à gauche (le premier arrivé)
+
+Dans la liste on peut ajouter des doublons cela ne pose pas de soucis, si on veut éviter cela il faudra faire un ensemble avec SADD.
+
+exemple : SADD ens "obj1", si on exécute cette commande 2 fois, la deuxième fois ne marche pas car cela ferait un doublon.
+
+Pour afficher on utilise SMEMBERS ens
+
+Il n'y a pas d'ordre dans un ensemble donc si on veut supprimer un élément on ne peut pas utiliser un indice, on utilise la valeur : SREM ens "obj1"
+
+si on veut fusionner les ensembles on fait : SUNION ens1 ens2, cela affichera l'union des deux, donc tous les éléments sans afficher les doublons.
+
+Maintenant on va voir les ensembles ordonnés qui servent par exemple pour classer des objets : ZADD ens 13 "nb qui porte malheur", on peut en mettre un autre pour voir : ZADD ens 7 "c'est mieux".
+Ensuite si on affiche avec : ZRANGE ens 0 -1 on obtient "c'est mieux" avant "nb qui porte malheur"
+(c'est donc bien affiché par ordre croissant)
+ZREVRANGE affiche par ordre décroissant
+
+ZRANK ens "c'est mieux" affiche son rang 
+
+Dans la pratique redis joue le rôle du cache, on sauvegarde rapidement dans redis le temps qu'on modifie etc (avantage : plus rapide, moins couteux)... Puis on enregistre dans une base de donnée persistance lorsqu'on veut vraiment sauvegarder.
+
+Enfin on peut faire des HSET : HSET user:1 name "Chloe", on peut rajouter plusieurs informations sur user:1, HSET user:1 age "26"
+et on peut afficher toutes ses informations : HGETALL user:1
+
+On peut aussi utiliser HMSET pour définir plusieurs éléments à la fois : HMSET user:1 name "Chloe" age 26. Et si on veut incrémenter l'âge par exemple : HINCRBY user:1 age 4. (age = age + 4)
+(HVALS user:1 pour afficher juste les valeurs de user:1)
+
+les HSET sont vraiment utilisés pour stocker des données ayant un type différents (pas de contraintes entres les valeurs d'un même ensemble)
+
+-----------------------
+
+Un client qui fait : SUSCRIBE channel user:1, écoutera les messages qui seront envoyés sur channel. Si sur un autre terminal client on fait : PUBLISH channel "coucou", le premier client recevra "coucou" mais pas que lui, en effet c'est un message envoyé en broadcast donc tout autre client écoutant sur channel recevra le même message.
+
+Au contraire si on veut parler uniquement avec un utilisateur précis on le précise dans la commande : publish user:1 channel "coucou user 1 :D". Cette fois-ci, seul l'user 1 qui écoute sur channel recevra le message.
+
+Avec PSUSCRIBE mes*, un utilisateur peut écouter TOUS messages envoyés sur qqch commençant par "mes" par exemples il recevra ceux de "mesmessages", "mesnotes"...
+
+KEYS *, montre toutes les clés définies pour cette session.
+
+On peut aller à la session 1 en utilisant SELECT 1, il y en a 16 et on commence par la 0. (quand on change  on a plus accès au donnée de la session précédente jusqu'à ce qu'on revienne).
+
+ATTENTION, il faut bien garder en tête que puisqu'il n'y a pas de persistance de donnée, la moindre panne supprime toutes les données, il faut donc un système complémentaire à redis si on veut pallier à ce problème.
+
